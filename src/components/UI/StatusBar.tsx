@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, forwardRef } from "react";
 import { Satellite, Plane, Activity, Camera } from "lucide-react";
 
 interface StatusBarProps {
@@ -13,7 +13,7 @@ interface StatusBarProps {
   };
 }
 
-const StatusBar = ({ lat, lon, alt, entityCounts }: StatusBarProps) => {
+const StatusBar = forwardRef<HTMLDivElement, StatusBarProps>(({ lat, lon, alt, entityCounts }, ref) => {
   const [utcTime, setUtcTime] = useState("");
 
   useEffect(() => {
@@ -38,21 +38,17 @@ const StatusBar = ({ lat, lon, alt, entityCounts }: StatusBarProps) => {
   };
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-40 h-8 bg-background/90 backdrop-blur-sm border-t border-border flex items-center px-4 text-xs font-mono">
-      {/* UTC Clock */}
+    <div ref={ref} className="fixed bottom-0 left-0 right-0 z-40 h-8 bg-background/90 backdrop-blur-sm border-t border-border flex items-center px-4 text-xs font-mono">
       <div className="text-primary text-glow-green mr-6">
         {utcTime}
       </div>
 
-      {/* Coordinates */}
       <div className="text-muted-foreground mr-6">
         LAT {formatCoord(lat, "N", "S")} | LON {formatCoord(lon, "E", "W")} | ALT {formatAlt(alt)}
       </div>
 
-      {/* Spacer */}
       <div className="flex-1" />
 
-      {/* Entity counts */}
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-1 text-tactical-cyan">
           <Satellite className="w-3 h-3" />
@@ -72,13 +68,14 @@ const StatusBar = ({ lat, lon, alt, entityCounts }: StatusBarProps) => {
         </div>
       </div>
 
-      {/* System status */}
       <div className="ml-6 flex items-center gap-1.5">
         <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse-glow" />
         <span className="text-primary text-glow-green">ONLINE</span>
       </div>
     </div>
   );
-};
+});
+
+StatusBar.displayName = "StatusBar";
 
 export default StatusBar;

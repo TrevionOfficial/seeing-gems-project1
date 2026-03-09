@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, forwardRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight, Radio } from "lucide-react";
 
@@ -14,7 +14,7 @@ interface IntelFeedProps {
   events: IntelEvent[];
 }
 
-const IntelFeed = ({ events }: IntelFeedProps) => {
+const IntelFeed = forwardRef<HTMLDivElement, IntelFeedProps>(({ events }, ref) => {
   const [collapsed, setCollapsed] = useState(false);
 
   const getSeverityColor = (severity: string) => {
@@ -36,8 +36,7 @@ const IntelFeed = ({ events }: IntelFeedProps) => {
   };
 
   return (
-    <div className="fixed right-0 top-0 bottom-8 z-40 flex">
-      {/* Collapse toggle */}
+    <div ref={ref} className="fixed right-0 top-0 bottom-8 z-40 flex">
       <button
         onClick={() => setCollapsed(!collapsed)}
         className="self-center bg-background/85 backdrop-blur-md border border-border border-r-0 rounded-l px-1 py-3 hover:bg-secondary/30 transition-colors"
@@ -58,7 +57,6 @@ const IntelFeed = ({ events }: IntelFeedProps) => {
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
             className="w-72 bg-background/85 backdrop-blur-md border-l border-border flex flex-col"
           >
-            {/* Header */}
             <div className="p-4 border-b border-border flex items-center gap-2">
               <Radio className="w-3.5 h-3.5 text-primary animate-pulse-glow" />
               <h2 className="font-tactical text-xs tracking-[0.3em] text-primary text-glow-green">
@@ -66,7 +64,6 @@ const IntelFeed = ({ events }: IntelFeedProps) => {
               </h2>
             </div>
 
-            {/* Events */}
             <div className="flex-1 overflow-y-auto p-3 space-y-2">
               {events.length === 0 ? (
                 <div className="text-[10px] text-muted-foreground/50 text-center py-8 tracking-wider">
@@ -100,6 +97,8 @@ const IntelFeed = ({ events }: IntelFeedProps) => {
       </AnimatePresence>
     </div>
   );
-};
+});
+
+IntelFeed.displayName = "IntelFeed";
 
 export default IntelFeed;
