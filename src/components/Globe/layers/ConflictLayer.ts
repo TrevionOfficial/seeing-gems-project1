@@ -1,25 +1,18 @@
 import { Cesium } from "@/lib/cesium-config";
 import type { ConflictEvent } from "@/hooks/useConflicts";
 
-let currentCollection: any = null;
-
 export function renderConflicts(viewer: any, conflicts: ConflictEvent[]) {
-  if (!viewer || !viewer.scene) return;
+  if (!viewer || !viewer.entities) return;
 
-  if (currentCollection) {
-    try { viewer.scene.primitives.remove(currentCollection); } catch {}
-    currentCollection = null;
-  }
-
-  // Remove labels
+  // Remove existing conflict entities
   try {
-    const toRemove = viewer.entities.values.filter((e: any) => e.id?.startsWith("conflict-"));
+    const toRemove = viewer.entities.values.filter((e: any) => 
+      e.id?.startsWith("conflict-") || e.id?.startsWith("gdelt-")
+    );
     toRemove.forEach((e: any) => viewer.entities.remove(e));
   } catch {}
 
   if (conflicts.length === 0) return;
-
-  const points = new Cesium.PointPrimitiveCollection();
 
   conflicts.forEach((event) => {
     try {
@@ -34,17 +27,29 @@ export function renderConflicts(viewer: any, conflicts: ConflictEvent[]) {
 
       const size = event.fatalities > 10 ? 10 : event.fatalities > 0 ? 7 : 5;
 
-      points.add({
+      viewer.entities.add({
+        id: event.id,
         position: Cesium.Cartesian3.fromDegrees(event.lon, event.lat, 100),
-        pixelSize: size,
-        color,
-        outlineColor: Cesium.Color.BLACK.withAlpha(0.5),
-        outlineWidth: 1,
-        distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 15000000),
+        point: {
+          pixelSize: size,
+          color,
+          outlineColor: Cesium.Color.BLACK.withAlpha(0.5),
+          outlineWidth: 1,
+          heightReference: Cesium.HeightReference.RELATIVE_TO_GROUND,
+          distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 15000000),
+        },
+        properties: {
+          event_type: event.event_type,
+          event_date: event.event_date,
+          country: event.country,
+          location: event.location,
+          lat: event.lat,
+          lon: event.lon,
+          fatalities: event.fatalities,
+          notes: event.notes,
+          source: event.source,
+        },
       });
     } catch {}
   });
-
-  currentCollection = points;
-  viewer.scene.primitives.add(points);
 }
