@@ -1,18 +1,10 @@
 import { Cesium } from "@/lib/cesium-config";
-import type { Earthquake } from "@/hooks/useEarthquakes";
+import type { EarthquakeData, Earthquake } from "@/hooks/useEarthquakes";
 
-let currentCollection: any = null;
+export function renderEarthquakes(viewer: any, earthquakes: (EarthquakeData | Earthquake)[]) {
+  if (!viewer || !viewer.entities) return;
 
-export function renderEarthquakes(viewer: any, earthquakes: Earthquake[]) {
-  if (!viewer || !viewer.scene) return;
-
-  // Remove previous collection
-  if (currentCollection) {
-    try { viewer.scene.primitives.remove(currentCollection); } catch {}
-    currentCollection = null;
-  }
-
-  // Also clean up any old entity-based markers
+  // Remove existing earthquake entities
   try {
     const toRemove = viewer.entities.values.filter((e: any) => e.id?.startsWith("eq-"));
     toRemove.forEach((e: any) => viewer.entities.remove(e));
@@ -20,31 +12,39 @@ export function renderEarthquakes(viewer: any, earthquakes: Earthquake[]) {
 
   if (earthquakes.length === 0) return;
 
-  const points = new Cesium.PointPrimitiveCollection();
-
-  earthquakes.forEach((eq) => {
+  earthquakes.forEach((eq, idx) => {
     try {
       if (!isFinite(eq.lat) || !isFinite(eq.lon)) return;
       if (eq.lat < -90 || eq.lat > 90 || eq.lon < -180 || eq.lon > 180) return;
+
+      const size = Math.max(6, eq.magnitude * 3);
       const color = eq.magnitude >= 5
-        ? Cesium.Color.fromCssColorString("#ff3333").withAlpha(0.9)
+        ? Cesium.Color.fromCssColorString("#ff1744").withAlpha(0.9)
         : eq.magnitude >= 4
-          ? Cesium.Color.fromCssColorString("#ff8800").withAlpha(0.8)
-          : Cesium.Color.fromCssColorString("#ffcc00").withAlpha(0.7);
+        ? Cesium.Color.fromCssColorString("#ff9100").withAlpha(0.8)
+        : Cesium.Color.fromCssColorString("#ffea00").withAlpha(0.7);
 
-      const size = Math.max(eq.magnitude * 4, 6);
-
-      points.add({
+      viewer.entities.add({
+        id: `eq-${idx}`,
         position: Cesium.Cartesian3.fromDegrees(eq.lon, eq.lat, 0),
-        pixelSize: size,
-        color,
-        outlineColor: color.withAlpha(1.0),
-        outlineWidth: 1,
-        distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 20000000),
+        point: {
+          pixelSize: size,
+          color,
+          outlineColor: Cesium.Color.BLACK.withAlpha(0.5),
+          outlineWidth: 1,
+          heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+          distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 20000000),
+        },
+        properties: {
+          magnitude: eq.magnitude,
+          place: eq.place,
+          depth: eq.depth,
+          time: eq.time,
+          lat: eq.lat,
+          lon: eq.lon,
+          url: (eq as EarthquakeData).url,
+        },
       });
     } catch {}
   });
-
-  currentCollection = points;
-  viewer.scene.primitives.add(points);
 }
