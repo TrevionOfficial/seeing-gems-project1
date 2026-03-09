@@ -258,3 +258,29 @@ async function fetchMarketData(): Promise<any[]> {
   cache["finance"] = { data: JSON.stringify(fallback), ts: Date.now() };
   return fallback;
 }
+
+function generateSimulatedFlights(): any[] {
+  const routes = [
+    { from: [-74, 40.7], to: [-0.1, 51.5], callsign: "BAW178" },
+    { from: [-122.4, 37.8], to: [139.7, 35.7], callsign: "UAL837" },
+    { from: [2.3, 48.9], to: [-73.9, 40.7], callsign: "AFR007" },
+    { from: [103.8, 1.3], to: [114, 22.3], callsign: "SIA212" },
+    { from: [-118.2, 34], to: [144.9, -37.8], callsign: "QFA12" },
+    { from: [55.3, 25.3], to: [100.5, 13.8], callsign: "UAE418" },
+    { from: [-80.2, 25.8], to: [-3.7, 40.4], callsign: "IBE6123" },
+    { from: [12.5, 41.9], to: [-43.2, -22.9], callsign: "AZA680" },
+  ];
+  
+  const now = Date.now();
+  return routes.map((r, i) => {
+    const progress = ((now / 10000 + i * 1000) % 10000) / 10000;
+    const lon = r.from[0] + (r.to[0] - r.from[0]) * progress;
+    const lat = r.from[1] + (r.to[1] - r.from[1]) * progress;
+    const alt = 35000 + Math.sin(progress * Math.PI) * 5000;
+    return [
+      `SIM${i}`, r.callsign, "", null, null,
+      lon, lat, alt * 0.3048, false, 450 * 0.514, 
+      Math.atan2(r.to[0] - r.from[0], r.to[1] - r.from[1]) * 180 / Math.PI
+    ];
+  });
+}
