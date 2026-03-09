@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 export interface SatelliteData {
   id: string;
@@ -9,7 +10,6 @@ export interface SatelliteData {
   velocity: number;
 }
 
-// Simple TLE parser + SGP4 propagation
 export function useSatellites(enabled: boolean) {
   const [satellites, setSatellites] = useState<SatelliteData[]>([]);
   const [loading, setLoading] = useState(false);
@@ -18,20 +18,20 @@ export function useSatellites(enabled: boolean) {
     if (!enabled) return;
     setLoading(true);
     try {
-      // Dynamically import satellite.js
       const satellite = await import("satellite.js");
-      
-      const res = await fetch(
-        "https://celestrak.org/NORAD/elements/gp.php?GROUP=active&FORMAT=tle"
-      );
-      const text = await res.text();
+
+      const { data, error } = await supabase.functions.invoke("data-proxy", {
+        body: { source: "satellites" },
+      });
+      if (error) throw error;
+
+      const text = typeof data === "string" ? data : JSON.stringify(data);
       const lines = text.trim().split("\n");
-      
+
       const sats: SatelliteData[] = [];
       const now = new Date();
       const gmst = satellite.gstime(now);
-      
-      // Parse up to 150 satellites for performance
+
       for (let i = 0; i < Math.min(lines.length, 450); i += 3) {
         try {
           const name = lines[i].trim();
@@ -41,7 +41,7 @@ export function useSatellites(enabled: boolean) {
 
           const satrec = satellite.twoline2satrec(tleLine1, tleLine2);
           const positionAndVelocity = satellite.propagate(satrec, now);
-          
+
           if (typeof positionAndVelocity.position === "boolean") continue;
           const posEci = positionAndVelocity.position;
           const velEci = positionAndVelocity.velocity;
@@ -53,19 +53,12 @@ export function useSatellites(enabled: boolean) {
           const alt = posGd.height;
           const velocity = Math.sqrt(velEci.x ** 2 + velEci.y ** 2 + velEci.z ** 2);
 
-          sats.push({
-            id: `sat-${i / 3}`,
-            name,
-            lat,
-            lon,
-            alt,
-            velocity,
-          });
+          sats.push({ id: `sat-${i / 3}`, name, lat, lon, alt, velocity });
         } catch {
           continue;
         }
       }
-      
+
       setSatellites(sats);
     } catch (e) {
       console.error("Failed to fetch satellites:", e);
@@ -77,7 +70,7 @@ export function useSatellites(enabled: boolean) {
   useEffect(() => {
     fetchSatellites();
     if (!enabled) { setSatellites([]); return; }
-    const interval = setInterval(fetchSatellites, 30000);
+    const interval = setInterval(fetchSatellites, 60000);
     return () => clearInterval(interval);
   }, [fetchSatellites, enabled]);
 

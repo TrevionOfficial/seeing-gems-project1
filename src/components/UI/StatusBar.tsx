@@ -1,5 +1,5 @@
 import { useState, useEffect, forwardRef } from "react";
-import { Satellite, Plane, Activity, Camera } from "lucide-react";
+import { Satellite, Plane, Activity, Camera, Swords, Newspaper } from "lucide-react";
 
 interface StatusBarProps {
   lat: number;
@@ -10,6 +10,8 @@ interface StatusBarProps {
     flights: number;
     earthquakes: number;
     cctv: number;
+    conflicts: number;
+    news: number;
   };
 }
 
@@ -61,6 +63,14 @@ const StatusBar = forwardRef<HTMLDivElement, StatusBarProps>(({ lat, lon, alt, e
         <div className="flex items-center gap-1 text-tactical-red">
           <Activity className="w-3 h-3" />
           <span>{entityCounts.earthquakes}</span>
+        </div>
+        <div className="flex items-center gap-1 text-tactical-red">
+          <Swords className="w-3 h-3" />
+          <span>{entityCounts.conflicts}</span>
+        </div>
+        <div className="flex items-center gap-1 text-primary">
+          <Newspaper className="w-3 h-3" />
+          <span>{entityCounts.news}</span>
         </div>
         <div className="flex items-center gap-1 text-muted-foreground">
           <Camera className="w-3 h-3" />
