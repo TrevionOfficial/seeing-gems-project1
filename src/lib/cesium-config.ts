@@ -1,16 +1,19 @@
 // Cesium is loaded globally via CDN in index.html
 declare global {
   interface Window {
-    Cesium: typeof import("cesium");
+    Cesium: any;
   }
 }
 
 const Cesium = window.Cesium;
 
-// Use default Cesium Ion token for basic imagery
+// Use default Cesium Ion token
 Cesium.Ion.defaultAccessToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJkMGZkNmZhYS1hZTU1LTRkMjQtOTAwOS1lZjE5Yjc3OWQ4ODkiLCJpZCI6NDAwNTU0LCJpYXQiOjE3NzMwMjc0NDh9.M5fp9dvz-76jVFVd1UuNanTHrXKgvK5QAVcv8ob_t6c";
 
-export function createViewer(container: HTMLElement) {
+export async function createViewer(container: HTMLElement) {
+  // Set up Cesium World Terrain for elevation
+  const terrainProvider = await Cesium.CesiumTerrainProvider.fromIonAssetId(1);
+
   const viewer = new Cesium.Viewer(container, {
     animation: false,
     baseLayerPicker: false,
@@ -27,6 +30,7 @@ export function createViewer(container: HTMLElement) {
     scene3DOnly: true,
     requestRenderMode: false,
     maximumRenderTimeChange: Infinity,
+    terrainProvider,
   });
 
   // Dark globe styling
@@ -35,6 +39,15 @@ export function createViewer(container: HTMLElement) {
   viewer.scene.fog.enabled = true;
   viewer.scene.fog.density = 0.0002;
   viewer.scene.globe.enableLighting = true;
+  viewer.scene.globe.depthTestAgainstTerrain = true;
+
+  // Add Cesium OSM Buildings (3D building tiles - free with Cesium Ion)
+  try {
+    const buildingTileset = await Cesium.createOsmBuildingsAsync();
+    viewer.scene.primitives.add(buildingTileset);
+  } catch (e) {
+    console.warn("Could not load OSM Buildings:", e);
+  }
 
   // Set initial camera position
   viewer.camera.setView({

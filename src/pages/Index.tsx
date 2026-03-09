@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import CesiumViewerComponent from "@/components/Globe/CesiumViewer";
 import BootScreen from "@/components/UI/BootScreen";
 import Crosshair from "@/components/UI/Crosshair";
@@ -17,7 +17,8 @@ import { Cesium } from "@/lib/cesium-config";
 
 const Index = () => {
   const [booted, setBooted] = useState(false);
-  const [viewer, setViewer] = useState<any>(null);
+  const [viewerReady, setViewerReady] = useState(false);
+  const viewerRef = useRef<any>(null);
   const [cameraPos, setCameraPos] = useState({ lat: 20, lon: 0, alt: 20000000 });
   const [layers, setLayers] = useState<LayerState>({
     satellites: true,
@@ -26,6 +27,7 @@ const Index = () => {
     cctv: false,
   });
   const [events, setEvents] = useState<IntelEvent[]>([]);
+  const eventAddedRef = useRef<Set<string>>(new Set());
 
   const { earthquakes } = useEarthquakes(booted && layers.earthquakes);
   const { satellites } = useSatellites(booted && layers.satellites);
@@ -42,65 +44,61 @@ const Index = () => {
     }, ...prev].slice(0, 100));
   }, []);
 
-  // Render layers
-  useEffect(() => {
-    if (!viewer) return;
-    renderEarthquakes(viewer, layers.earthquakes ? earthquakes : []);
-  }, [viewer, earthquakes, layers.earthquakes]);
+  // Only add intel events once per data update (deduplicate)
+  const addEventOnce = useCallback((key: string, type: IntelEvent["type"], message: string, severity: IntelEvent["severity"] = "info") => {
+    if (eventAddedRef.current.has(key)) return;
+    eventAddedRef.current.add(key);
+    addEvent(type, message, severity);
+    // Allow re-adding after 30s
+    setTimeout(() => eventAddedRef.current.delete(key), 30000);
+  }, [addEvent]);
 
+  // Render layers — only when viewer is actually ready
   useEffect(() => {
-    if (!viewer) return;
-    renderSatellites(viewer, layers.satellites ? satellites : []);
-  }, [viewer, satellites, layers.satellites]);
-
-  useEffect(() => {
-    if (!viewer) return;
-    renderFlights(viewer, layers.flights ? flights : []);
-  }, [viewer, flights, layers.flights]);
-
-  useEffect(() => {
-    if (!viewer) return;
-    renderCCTV(viewer, layers.cctv ? cameras : []);
-  }, [viewer, cameras, layers.cctv]);
-
-  // Intel feed events
-  useEffect(() => {
+    if (!viewerReady || !viewerRef.current) return;
+    renderEarthquakes(viewerRef.current, layers.earthquakes ? earthquakes : []);
     if (earthquakes.length > 0 && layers.earthquakes) {
       const strong = earthquakes.filter(e => e.magnitude >= 4.5);
       if (strong.length > 0) {
-        addEvent("earthquake", `${strong.length} significant quakes detected (M4.5+)`, "warning");
+        addEventOnce(`eq-strong-${strong.length}`, "earthquake", `${strong.length} significant quakes detected (M4.5+)`, "warning");
       }
-      addEvent("earthquake", `Tracking ${earthquakes.length} seismic events`, "info");
+      addEventOnce(`eq-total-${earthquakes.length}`, "earthquake", `Tracking ${earthquakes.length} seismic events`, "info");
     }
-  }, [earthquakes]);
+  }, [viewerReady, earthquakes, layers.earthquakes]);
 
   useEffect(() => {
+    if (!viewerReady || !viewerRef.current) return;
+    renderSatellites(viewerRef.current, layers.satellites ? satellites : []);
     if (satellites.length > 0 && layers.satellites) {
-      addEvent("satellite", `Tracking ${satellites.length} satellites`, "info");
+      addEventOnce(`sat-${satellites.length}`, "satellite", `Tracking ${satellites.length} satellites`, "info");
     }
-  }, [satellites]);
+  }, [viewerReady, satellites, layers.satellites]);
 
   useEffect(() => {
+    if (!viewerReady || !viewerRef.current) return;
+    renderFlights(viewerRef.current, layers.flights ? flights : []);
     if (flights.length > 0 && layers.flights) {
-      addEvent("flight", `${flights.length} aircraft in view`, "info");
+      addEventOnce(`flt-${flights.length}`, "flight", `${flights.length} aircraft in view`, "info");
     }
-  }, [flights]);
+  }, [viewerReady, flights, layers.flights]);
 
   useEffect(() => {
+    if (!viewerReady || !viewerRef.current) return;
+    renderCCTV(viewerRef.current, layers.cctv ? cameras : []);
     if (cameras.length > 0 && layers.cctv) {
-      addEvent("cctv", `${cameras.length} cameras linked`, "info");
+      addEventOnce(`cctv-${cameras.length}`, "cctv", `${cameras.length} cameras linked`, "info");
     }
-  }, [cameras]);
+  }, [viewerReady, cameras, layers.cctv]);
 
   const handleToggleLayer = useCallback((layer: keyof LayerState) => {
     setLayers(prev => ({ ...prev, [layer]: !prev[layer] }));
   }, []);
 
   const handleLocateMe = useCallback(() => {
-    if (!viewer) return;
+    if (!viewerRef.current) return;
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        viewer.camera.flyTo({
+        viewerRef.current.camera.flyTo({
           destination: Cesium.Cartesian3.fromDegrees(
             pos.coords.longitude,
             pos.coords.latitude,
@@ -112,15 +110,17 @@ const Index = () => {
       },
       () => addEvent("system", "Geolocation unavailable", "warning")
     );
-  }, [viewer, addEvent]);
+  }, [addEvent]);
 
   const handleCameraMove = useCallback((lat: number, lon: number, alt: number) => {
     setCameraPos({ lat, lon, alt });
   }, []);
 
   const handleViewerReady = useCallback((v: any) => {
-    setViewer(v);
+    viewerRef.current = v;
+    setViewerReady(true);
     addEvent("system", "Cesium 3D Engine initialized", "info");
+    addEvent("system", "3D Buildings & Terrain loaded", "info");
     addEvent("system", "All subsystems operational", "info");
   }, [addEvent]);
 
