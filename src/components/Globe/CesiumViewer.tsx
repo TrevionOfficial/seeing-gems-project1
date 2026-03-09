@@ -9,28 +9,37 @@ interface CesiumViewerProps {
 const CesiumViewerComponent = ({ onViewerReady, onCameraMove }: CesiumViewerProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const viewerRef = useRef<any>(null);
+  const initRef = useRef(false);
 
   useEffect(() => {
-    if (!containerRef.current || viewerRef.current) return;
+    if (!containerRef.current || initRef.current) return;
+    initRef.current = true;
 
-    const viewer = createViewer(containerRef.current);
-    viewerRef.current = viewer;
-    onViewerReady?.(viewer);
+    const init = async () => {
+      try {
+        const viewer = await createViewer(containerRef.current!);
+        viewerRef.current = viewer;
+        onViewerReady?.(viewer);
 
-    const removeListener = viewer.camera.changed.addEventListener(() => {
-      const cartographic = viewer.camera.positionCartographic;
-      if (cartographic) {
-        onCameraMove?.(
-          Cesium.Math.toDegrees(cartographic.latitude),
-          Cesium.Math.toDegrees(cartographic.longitude),
-          cartographic.height
-        );
+        viewer.camera.changed.addEventListener(() => {
+          const cartographic = viewer.camera.positionCartographic;
+          if (cartographic) {
+            onCameraMove?.(
+              Cesium.Math.toDegrees(cartographic.latitude),
+              Cesium.Math.toDegrees(cartographic.longitude),
+              cartographic.height
+            );
+          }
+        });
+        viewer.camera.percentageChanged = 0.01;
+      } catch (e) {
+        console.error("Failed to initialize Cesium viewer:", e);
       }
-    });
-    viewer.camera.percentageChanged = 0.01;
+    };
+
+    init();
 
     return () => {
-      removeListener();
       if (viewerRef.current && !viewerRef.current.isDestroyed()) {
         viewerRef.current.destroy();
         viewerRef.current = null;
