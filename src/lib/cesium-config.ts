@@ -8,7 +8,7 @@ declare global {
 const Cesium = window.Cesium;
 
 // Use default Cesium Ion token for basic imagery
-Cesium.Ion.defaultAccessToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiI3ZjQ0N2E0Mi0xNWZlLTQ1NTAtYjhjZS02NjVhNDZjZDRhN2UiLCJpZCI6MjU5LCJpYXQiOjE3MjUwNTIwNjF9.Qdifm3kMpiYCSCx0pV7oAgFHAFCRbOFJlPvPbAACf-I";
+Cesium.Ion.defaultAccessToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJkMGZkNmZhYS1hZTU1LTRkMjQtOTAwOS1lZjE5Yjc3OWQ4ODkiLCJpZCI6NDAwNTU0LCJpYXQiOjE3NzMwMjc0NDh9.M5fp9dvz-76jVFVd1UuNanTHrXKgvK5QAVcv8ob_t6c";
 
 export function createViewer(container: HTMLElement) {
   const viewer = new Cesium.Viewer(container, {
