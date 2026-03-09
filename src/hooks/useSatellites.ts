@@ -31,8 +31,8 @@ export function useSatellites(enabled: boolean) {
       const now = new Date();
       const gmst = satellite.gstime(now);
       
-      // Parse up to 200 satellites for performance
-      for (let i = 0; i < Math.min(lines.length, 600); i += 3) {
+      // Parse up to 150 satellites for performance
+      for (let i = 0; i < Math.min(lines.length, 450); i += 3) {
         try {
           const name = lines[i].trim();
           const tleLine1 = lines[i + 1]?.trim();
