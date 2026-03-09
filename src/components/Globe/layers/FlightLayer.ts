@@ -1,6 +1,8 @@
 import { Cesium } from "@/lib/cesium-config";
 import type { FlightData } from "@/hooks/useFlights";
 
+let currentCollection: any = null;
+
 function getAltitudeColor(altFeet: number) {
   const C = Cesium.Color;
   if (altFeet < 10000) return C.fromCssColorString("#33ff33").withAlpha(0.8);
@@ -10,39 +12,38 @@ function getAltitudeColor(altFeet: number) {
 }
 
 export function renderFlights(viewer: any, flights: FlightData[]) {
-  if (!viewer || !viewer.entities) return;
+  if (!viewer || !viewer.scene) return;
+
+  if (currentCollection) {
+    try { viewer.scene.primitives.remove(currentCollection); } catch {}
+    currentCollection = null;
+  }
 
   try {
     const toRemove = viewer.entities.values.filter((e: any) => e.id?.startsWith("flt-"));
     toRemove.forEach((e: any) => viewer.entities.remove(e));
-  } catch { /* ignore */ }
+  } catch {}
+
+  if (flights.length === 0) return;
+
+  const points = new Cesium.PointPrimitiveCollection();
 
   flights.forEach((flight) => {
     try {
       const color = getAltitudeColor(flight.altitude);
       const altMeters = flight.altitude * 0.3048;
 
-      viewer.entities.add({
-        id: `flt-${flight.id}`,
+      points.add({
         position: Cesium.Cartesian3.fromDegrees(flight.lon, flight.lat, altMeters),
-        point: {
-          pixelSize: 4,
-          color,
-          outlineColor: color.withAlpha(0.4),
-          outlineWidth: 1,
-          distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 15000000),
-        },
-        label: {
-          text: flight.callsign,
-          font: "9px JetBrains Mono",
-          fillColor: color,
-          style: Cesium.LabelStyle.FILL,
-          verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
-          pixelOffset: new Cesium.Cartesian2(8, -2),
-          scale: 0.7,
-          distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 3000000),
-        },
+        pixelSize: 4,
+        color,
+        outlineColor: color.withAlpha(0.4),
+        outlineWidth: 1,
+        distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 15000000),
       });
-    } catch { /* ignore */ }
+    } catch {}
   });
+
+  currentCollection = points;
+  viewer.scene.primitives.add(points);
 }
