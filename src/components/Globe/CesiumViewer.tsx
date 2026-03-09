@@ -1,14 +1,14 @@
-import { useEffect, useRef, useCallback, useState } from "react";
+import { useEffect, useRef } from "react";
 import { createViewer, Cesium } from "@/lib/cesium-config";
 
 interface CesiumViewerProps {
-  onViewerReady?: (viewer: Cesium.Viewer) => void;
+  onViewerReady?: (viewer: any) => void;
   onCameraMove?: (lat: number, lon: number, alt: number) => void;
 }
 
 const CesiumViewerComponent = ({ onViewerReady, onCameraMove }: CesiumViewerProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const viewerRef = useRef<Cesium.Viewer | null>(null);
+  const viewerRef = useRef<any>(null);
 
   useEffect(() => {
     if (!containerRef.current || viewerRef.current) return;
@@ -17,7 +17,6 @@ const CesiumViewerComponent = ({ onViewerReady, onCameraMove }: CesiumViewerProp
     viewerRef.current = viewer;
     onViewerReady?.(viewer);
 
-    // Camera move handler
     const removeListener = viewer.camera.changed.addEventListener(() => {
       const cartographic = viewer.camera.positionCartographic;
       if (cartographic) {

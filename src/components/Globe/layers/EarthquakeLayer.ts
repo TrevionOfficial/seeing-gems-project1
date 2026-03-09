@@ -1,10 +1,9 @@
 import { Cesium } from "@/lib/cesium-config";
 import type { Earthquake } from "@/hooks/useEarthquakes";
 
-export function renderEarthquakes(viewer: Cesium.Viewer, earthquakes: Earthquake[]) {
-  // Remove old entities
-  const toRemove = viewer.entities.values.filter(e => e.id?.startsWith("eq-"));
-  toRemove.forEach(e => viewer.entities.remove(e));
+export function renderEarthquakes(viewer: any, earthquakes: Earthquake[]) {
+  const toRemove = viewer.entities.values.filter((e: any) => e.id?.startsWith("eq-"));
+  toRemove.forEach((e: any) => viewer.entities.remove(e));
 
   earthquakes.forEach((eq) => {
     const radius = Math.max(eq.magnitude * 15000, 20000);
@@ -38,12 +37,6 @@ export function renderEarthquakes(viewer: Cesium.Viewer, earthquakes: Earthquake
         scale: 0.8,
         distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 8000000),
       },
-      description: `<div style="font-family: monospace; color: #33ff33; background: #0a1a0f; padding: 8px;">
-        <b>Earthquake M${eq.magnitude.toFixed(1)}</b><br/>
-        Location: ${eq.place}<br/>
-        Depth: ${eq.depth.toFixed(1)} km<br/>
-        Time: ${new Date(eq.time).toISOString()}<br/>
-      </div>`,
     });
   });
 }

@@ -1,16 +1,16 @@
 import { Cesium } from "@/lib/cesium-config";
 import type { FlightData } from "@/hooks/useFlights";
 
-function getAltitudeColor(altFeet: number): Cesium.Color {
+function getAltitudeColor(altFeet: number) {
   if (altFeet < 10000) return Cesium.Color.fromCssColorString("#33ff33").withAlpha(0.8);
   if (altFeet < 25000) return Cesium.Color.fromCssColorString("#ffcc00").withAlpha(0.8);
   if (altFeet < 35000) return Cesium.Color.fromCssColorString("#ff8800").withAlpha(0.8);
   return Cesium.Color.fromCssColorString("#ff3333").withAlpha(0.8);
 }
 
-export function renderFlights(viewer: Cesium.Viewer, flights: FlightData[]) {
-  const toRemove = viewer.entities.values.filter(e => e.id?.startsWith("flt-"));
-  toRemove.forEach(e => viewer.entities.remove(e));
+export function renderFlights(viewer: any, flights: FlightData[]) {
+  const toRemove = viewer.entities.values.filter((e: any) => e.id?.startsWith("flt-"));
+  toRemove.forEach((e: any) => viewer.entities.remove(e));
 
   flights.forEach((flight) => {
     const color = getAltitudeColor(flight.altitude);

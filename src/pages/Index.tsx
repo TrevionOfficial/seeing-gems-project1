@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useEffect } from "react";
 import CesiumViewerComponent from "@/components/Globe/CesiumViewer";
 import BootScreen from "@/components/UI/BootScreen";
 import Crosshair from "@/components/UI/Crosshair";
@@ -17,7 +17,7 @@ import { Cesium } from "@/lib/cesium-config";
 
 const Index = () => {
   const [booted, setBooted] = useState(false);
-  const [viewer, setViewer] = useState<Cesium.Viewer | null>(null);
+  const [viewer, setViewer] = useState<any>(null);
   const [cameraPos, setCameraPos] = useState({ lat: 20, lon: 0, alt: 20000000 });
   const [layers, setLayers] = useState<LayerState>({
     satellites: true,
@@ -42,41 +42,55 @@ const Index = () => {
     }, ...prev].slice(0, 100));
   }, []);
 
-  // Render layers when data changes
+  // Render layers
   useEffect(() => {
     if (!viewer) return;
     renderEarthquakes(viewer, layers.earthquakes ? earthquakes : []);
-    if (earthquakes.length > 0 && layers.earthquakes) {
-      const strong = earthquakes.filter(e => e.magnitude >= 4.5);
-      strong.forEach(eq => {
-        addEvent("earthquake", `M${eq.magnitude.toFixed(1)} — ${eq.place}`, eq.magnitude >= 5 ? "critical" : "warning");
-      });
-    }
   }, [viewer, earthquakes, layers.earthquakes]);
 
   useEffect(() => {
     if (!viewer) return;
     renderSatellites(viewer, layers.satellites ? satellites : []);
-    if (satellites.length > 0 && layers.satellites) {
-      addEvent("satellite", `Tracking ${satellites.length} satellites`, "info");
-    }
   }, [viewer, satellites, layers.satellites]);
 
   useEffect(() => {
     if (!viewer) return;
     renderFlights(viewer, layers.flights ? flights : []);
-    if (flights.length > 0 && layers.flights) {
-      addEvent("flight", `${flights.length} aircraft in view`, "info");
-    }
   }, [viewer, flights, layers.flights]);
 
   useEffect(() => {
     if (!viewer) return;
     renderCCTV(viewer, layers.cctv ? cameras : []);
+  }, [viewer, cameras, layers.cctv]);
+
+  // Intel feed events
+  useEffect(() => {
+    if (earthquakes.length > 0 && layers.earthquakes) {
+      const strong = earthquakes.filter(e => e.magnitude >= 4.5);
+      if (strong.length > 0) {
+        addEvent("earthquake", `${strong.length} significant quakes detected (M4.5+)`, "warning");
+      }
+      addEvent("earthquake", `Tracking ${earthquakes.length} seismic events`, "info");
+    }
+  }, [earthquakes]);
+
+  useEffect(() => {
+    if (satellites.length > 0 && layers.satellites) {
+      addEvent("satellite", `Tracking ${satellites.length} satellites`, "info");
+    }
+  }, [satellites]);
+
+  useEffect(() => {
+    if (flights.length > 0 && layers.flights) {
+      addEvent("flight", `${flights.length} aircraft in view`, "info");
+    }
+  }, [flights]);
+
+  useEffect(() => {
     if (cameras.length > 0 && layers.cctv) {
       addEvent("cctv", `${cameras.length} cameras linked`, "info");
     }
-  }, [viewer, cameras, layers.cctv]);
+  }, [cameras]);
 
   const handleToggleLayer = useCallback((layer: keyof LayerState) => {
     setLayers(prev => ({ ...prev, [layer]: !prev[layer] }));
@@ -104,7 +118,7 @@ const Index = () => {
     setCameraPos({ lat, lon, alt });
   }, []);
 
-  const handleViewerReady = useCallback((v: Cesium.Viewer) => {
+  const handleViewerReady = useCallback((v: any) => {
     setViewer(v);
     addEvent("system", "Cesium 3D Engine initialized", "info");
     addEvent("system", "All subsystems operational", "info");

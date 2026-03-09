@@ -1,9 +1,9 @@
 import { Cesium } from "@/lib/cesium-config";
 import type { SatelliteData } from "@/hooks/useSatellites";
 
-export function renderSatellites(viewer: Cesium.Viewer, satellites: SatelliteData[]) {
-  const toRemove = viewer.entities.values.filter(e => e.id?.startsWith("sat-"));
-  toRemove.forEach(e => viewer.entities.remove(e));
+export function renderSatellites(viewer: any, satellites: SatelliteData[]) {
+  const toRemove = viewer.entities.values.filter((e: any) => e.id?.startsWith("sat-"));
+  toRemove.forEach((e: any) => viewer.entities.remove(e));
 
   satellites.forEach((sat) => {
     viewer.entities.add({
