@@ -6,6 +6,8 @@ import StatusBar from "@/components/UI/StatusBar";
 import OperationsPanel, { type LayerState } from "@/components/UI/OperationsPanel";
 import IntelFeed, { type IntelEvent } from "@/components/UI/IntelFeed";
 import MarketTicker from "@/components/UI/MarketTicker";
+import DashboardStats from "@/components/UI/DashboardStats";
+import EntityDetailPopup, { type EntityDetails } from "@/components/UI/EntityDetailPopup";
 import { useEarthquakes } from "@/hooks/useEarthquakes";
 import { useSatellites } from "@/hooks/useSatellites";
 import { useFlights } from "@/hooks/useFlights";
@@ -26,6 +28,7 @@ const Index = () => {
   const [viewerReady, setViewerReady] = useState(false);
   const viewerRef = useRef<any>(null);
   const [cameraPos, setCameraPos] = useState({ lat: 20, lon: 0, alt: 20000000 });
+  const [selectedEntity, setSelectedEntity] = useState<EntityDetails | null>(null);
   const [layers, setLayers] = useState<LayerState>({
     satellites: true,
     flights: true,
@@ -71,7 +74,7 @@ const Index = () => {
     if (earthquakes.length > 0 && layers.earthquakes) {
       const strong = earthquakes.filter(e => e.magnitude >= 4.5);
       if (strong.length > 0) {
-        addEventOnce(`eq-strong-${strong.length}`, "earthquake", `${strong.length} significant quakes detected (M4.5+)`, "warning");
+        addEventOnce(`eq-strong-${strong.length}`, "earthquake", `${strong.length} significant quakes (M4.5+)`, "warning");
       }
       addEventOnce(`eq-total-${earthquakes.length}`, "earthquake", `Tracking ${earthquakes.length} seismic events`, "info");
     }
@@ -89,16 +92,13 @@ const Index = () => {
     if (!viewerReady || !viewerRef.current) return;
     renderFlights(viewerRef.current, layers.flights ? flights : []);
     if (flights.length > 0 && layers.flights) {
-      addEventOnce(`flt-${flights.length}`, "flight", `${flights.length} aircraft in view`, "info");
+      addEventOnce(`flt-${flights.length}`, "flight", `${flights.length} aircraft tracked`, "info");
     }
   }, [viewerReady, flights, layers.flights]);
 
   useEffect(() => {
     if (!viewerReady || !viewerRef.current) return;
     renderCCTV(viewerRef.current, layers.cctv ? cameras : []);
-    if (cameras.length > 0 && layers.cctv) {
-      addEventOnce(`cctv-${cameras.length}`, "cctv", `${cameras.length} cameras linked`, "info");
-    }
   }, [viewerReady, cameras, layers.cctv]);
 
   useEffect(() => {
@@ -113,10 +113,6 @@ const Index = () => {
     if (!viewerReady || !viewerRef.current) return;
     renderConflicts(viewerRef.current, layers.conflicts ? conflicts : []);
     if (conflicts.length > 0 && layers.conflicts) {
-      const fatal = conflicts.filter(c => c.fatalities > 0);
-      if (fatal.length > 0) {
-        addEventOnce(`conflict-fatal-${fatal.length}`, "system", `${fatal.length} conflict events with casualties`, "critical");
-      }
       addEventOnce(`conflict-${conflicts.length}`, "system", `${conflicts.length} conflict events tracked`, "warning");
     }
   }, [viewerReady, conflicts, layers.conflicts]);
@@ -126,14 +122,8 @@ const Index = () => {
     if (!layers.news || news.length === 0) return;
     const critical = news.filter(n => n.severity === "critical");
     if (critical.length > 0) {
-      critical.slice(0, 3).forEach((item, i) => {
-        addEventOnce(`news-crit-${i}-${item.title.slice(0, 20)}`, "system", `[${item.source}] ${item.title}`, "critical");
-      });
-    }
-    const warnings = news.filter(n => n.severity === "warning");
-    if (warnings.length > 0) {
-      warnings.slice(0, 2).forEach((item, i) => {
-        addEventOnce(`news-warn-${i}-${item.title.slice(0, 20)}`, "system", `[${item.source}] ${item.title}`, "warning");
+      critical.slice(0, 2).forEach((item, i) => {
+        addEventOnce(`news-crit-${i}-${item.title.slice(0, 15)}`, "system", `[${item.source}] ${item.title}`, "critical");
       });
     }
     addEventOnce(`news-total-${news.length}`, "system", `${news.length} intel reports ingested`, "info");
@@ -169,9 +159,12 @@ const Index = () => {
     viewerRef.current = v;
     setViewerReady(true);
     addEvent("system", "Cesium 3D Engine initialized", "info");
-    addEvent("system", "3D Buildings & Terrain loaded", "info");
-    addEvent("system", "WorldMonitor subsystems operational", "info");
+    addEvent("system", "WorldMonitor subsystems online", "info");
   }, [addEvent]);
+
+  const handleEntityClick = useCallback((entity: EntityDetails | null) => {
+    setSelectedEntity(entity);
+  }, []);
 
   return (
     <div className="fixed inset-0 overflow-hidden bg-background">
@@ -182,15 +175,38 @@ const Index = () => {
           <CesiumViewerComponent
             onViewerReady={handleViewerReady}
             onCameraMove={handleCameraMove}
+            onEntityClick={handleEntityClick}
           />
+          
           {layers.finance && <MarketTicker quotes={quotes} />}
+          
           <Crosshair />
+          
           <OperationsPanel
             layers={layers}
             onToggleLayer={handleToggleLayer}
             onLocateMe={handleLocateMe}
           />
+          
+          <DashboardStats
+            counts={{
+              satellites: satellites.length,
+              flights: flights.length,
+              earthquakes: earthquakes.length,
+              conflicts: conflicts.length,
+              news: news.length,
+            }}
+            quotes={quotes}
+            visible={true}
+          />
+          
           <IntelFeed events={events} />
+          
+          <EntityDetailPopup
+            entity={selectedEntity}
+            onClose={() => setSelectedEntity(null)}
+          />
+          
           <StatusBar
             lat={cameraPos.lat}
             lon={cameraPos.lon}

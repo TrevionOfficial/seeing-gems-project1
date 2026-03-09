@@ -28,48 +28,25 @@ export function useConflicts(enabled: boolean) {
       });
       if (error) throw error;
 
-      // Parse ACLED response
       const raw = typeof data === "string" ? JSON.parse(data) : data;
-      const events = (raw?.data || []).map((e: any, i: number) => ({
-        id: e.data_id || `conflict-${i}`,
-        event_type: e.event_type || "Unknown",
-        event_date: e.event_date || "",
+      const events = (raw?.data || []).map((e: any) => ({
+        id: e.id || `conflict-${Math.random()}`,
+        event_type: e.event_type || "Conflict/Protest",
+        event_date: e.event_date || new Date().toISOString(),
         country: e.country || "",
         location: e.location || "",
-        lat: parseFloat(e.latitude) || 0,
-        lon: parseFloat(e.longitude) || 0,
-        fatalities: parseInt(e.fatalities) || 0,
-        notes: (e.notes || "").slice(0, 200),
-        source: e.source || "",
-        severity: (parseInt(e.fatalities) || 0) > 10 ? "critical" : (parseInt(e.fatalities) || 0) > 0 ? "warning" : "info",
+        lat: e.lat || 0,
+        lon: e.lon || 0,
+        fatalities: e.fatalities || 0,
+        notes: e.notes || "",
+        source: e.source || "GDELT",
+        severity: e.severity || "warning",
       })).filter((e: ConflictEvent) => e.lat !== 0 && e.lon !== 0);
 
       setConflicts(events);
     } catch (e) {
       console.error("Failed to fetch conflicts:", e);
-      // Fallback: use GDELT-style data from a public API
-      try {
-        const res = await fetch("https://api.gdeltproject.org/api/v2/geo/geo?query=conflict&mode=pointdata&format=geojson&maxpoints=100&last24hrs=yes");
-        if (res.ok) {
-          const geojson = await res.json();
-          const events = (geojson?.features || []).map((f: any, i: number) => ({
-            id: `gdelt-${i}`,
-            event_type: "Conflict",
-            event_date: new Date().toISOString(),
-            country: f.properties?.name || "",
-            location: f.properties?.name || "",
-            lat: f.geometry?.coordinates?.[1] || 0,
-            lon: f.geometry?.coordinates?.[0] || 0,
-            fatalities: 0,
-            notes: f.properties?.html || "",
-            source: "GDELT",
-            severity: "warning" as const,
-          })).filter((e: ConflictEvent) => e.lat !== 0 && e.lon !== 0);
-          setConflicts(events);
-        }
-      } catch {
-        setConflicts([]);
-      }
+      setConflicts([]);
     } finally {
       setLoading(false);
     }
@@ -78,7 +55,7 @@ export function useConflicts(enabled: boolean) {
   useEffect(() => {
     fetchConflicts();
     if (!enabled) { setConflicts([]); return; }
-    const interval = setInterval(fetchConflicts, 300000); // 5 min
+    const interval = setInterval(fetchConflicts, 300000);
     return () => clearInterval(interval);
   }, [fetchConflicts, enabled]);
 

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 
-export interface Earthquake {
+export interface EarthquakeData {
   id: string;
   lat: number;
   lon: number;
@@ -9,10 +9,14 @@ export interface Earthquake {
   place: string;
   time: number;
   type: string;
+  url?: string;
 }
 
+// Keep old export for backwards compat
+export type Earthquake = EarthquakeData;
+
 export function useEarthquakes(enabled: boolean) {
-  const [earthquakes, setEarthquakes] = useState<Earthquake[]>([]);
+  const [earthquakes, setEarthquakes] = useState<EarthquakeData[]>([]);
   const [loading, setLoading] = useState(false);
 
   const fetchQuakes = useCallback(async () => {
@@ -23,7 +27,7 @@ export function useEarthquakes(enabled: boolean) {
         "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_day.geojson"
       );
       const data = await res.json();
-      const quakes: Earthquake[] = data.features.map((f: any) => ({
+      const quakes: EarthquakeData[] = data.features.map((f: any) => ({
         id: f.id,
         lat: f.geometry.coordinates[1],
         lon: f.geometry.coordinates[0],
@@ -32,6 +36,7 @@ export function useEarthquakes(enabled: boolean) {
         place: f.properties.place,
         time: f.properties.time,
         type: f.properties.type,
+        url: f.properties.url,
       }));
       setEarthquakes(quakes);
     } catch (e) {

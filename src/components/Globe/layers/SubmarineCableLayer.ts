@@ -1,16 +1,14 @@
 import { Cesium } from "@/lib/cesium-config";
 import { SUBMARINE_CABLES } from "@/data/submarineCables";
 
-let cableEntities: any[] = [];
-
 export function renderSubmarineCables(viewer: any, visible: boolean) {
   if (!viewer || !viewer.entities) return;
 
-  // Remove existing
-  cableEntities.forEach((e) => {
-    try { viewer.entities.remove(e); } catch {}
-  });
-  cableEntities = [];
+  // Remove existing cable entities
+  try {
+    const toRemove = viewer.entities.values.filter((e: any) => e.id?.startsWith("cable-"));
+    toRemove.forEach((e: any) => viewer.entities.remove(e));
+  } catch {}
 
   if (!visible) return;
 
@@ -21,7 +19,11 @@ export function renderSubmarineCables(viewer: any, visible: boolean) {
         positions.push(lon, lat);
       });
 
-      const entity = viewer.entities.add({
+      // Calculate midpoint for label
+      const midIdx = Math.floor(cable.waypoints.length / 2);
+      const midpoint = cable.waypoints[midIdx];
+
+      viewer.entities.add({
         id: `cable-${cable.id}`,
         polyline: {
           positions: Cesium.Cartesian3.fromDegreesArray(positions),
@@ -33,6 +35,7 @@ export function renderSubmarineCables(viewer: any, visible: boolean) {
           clampToGround: true,
           distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 20000000),
         },
+        position: Cesium.Cartesian3.fromDegrees(midpoint[0], midpoint[1], 0),
         label: {
           text: cable.name,
           font: "10px JetBrains Mono",
@@ -43,9 +46,14 @@ export function renderSubmarineCables(viewer: any, visible: boolean) {
           pixelOffset: new Cesium.Cartesian2(0, -10),
           distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 5000000),
           scale: 0.8,
+          heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+        },
+        properties: {
+          name: cable.name,
+          rfsYear: cable.rfsYear,
+          owners: cable.owners,
         },
       });
-      cableEntities.push(entity);
     } catch {}
   });
 }
