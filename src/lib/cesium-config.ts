@@ -1,10 +1,16 @@
-import * as Cesium from "cesium";
-import "cesium/Build/Cesium/Widgets/widgets.css";
+// Cesium is loaded globally via CDN in index.html
+declare global {
+  interface Window {
+    Cesium: typeof import("cesium");
+  }
+}
+
+const Cesium = window.Cesium;
 
 // Use default Cesium Ion token for basic imagery
 Cesium.Ion.defaultAccessToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiI3ZjQ0N2E0Mi0xNWZlLTQ1NTAtYjhjZS02NjVhNDZjZDRhN2UiLCJpZCI6MjU5LCJpYXQiOjE3MjUwNTIwNjF9.Qdifm3kMpiYCSCx0pV7oAgFHAFCRbOFJlPvPbAACf-I";
 
-export function createViewer(container: HTMLElement): Cesium.Viewer {
+export function createViewer(container: HTMLElement) {
   const viewer = new Cesium.Viewer(container, {
     animation: false,
     baseLayerPicker: false,
@@ -19,7 +25,6 @@ export function createViewer(container: HTMLElement): Cesium.Viewer {
     navigationInstructionsInitiallyVisible: false,
     creditContainer: document.createElement("div"),
     scene3DOnly: true,
-    skyAtmosphere: new Cesium.SkyAtmosphere(),
     requestRenderMode: false,
     maximumRenderTimeChange: Infinity,
   });
@@ -30,7 +35,6 @@ export function createViewer(container: HTMLElement): Cesium.Viewer {
   viewer.scene.fog.enabled = true;
   viewer.scene.fog.density = 0.0002;
   viewer.scene.globe.enableLighting = true;
-  viewer.scene.globe.atmosphereLightIntensity = 3.0;
 
   // Set initial camera position
   viewer.camera.setView({
