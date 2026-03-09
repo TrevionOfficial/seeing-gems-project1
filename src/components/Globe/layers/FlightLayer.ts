@@ -30,6 +30,8 @@ export function renderFlights(viewer: any, flights: FlightData[]) {
 
   flights.forEach((flight) => {
     try {
+      if (!isFinite(flight.lat) || !isFinite(flight.lon) || !isFinite(flight.altitude)) return;
+      if (flight.lat < -90 || flight.lat > 90 || flight.lon < -180 || flight.lon > 180) return;
       const color = getAltitudeColor(flight.altitude);
       const altMeters = flight.altitude * 0.3048;
 

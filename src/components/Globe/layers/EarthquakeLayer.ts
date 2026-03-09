@@ -24,6 +24,8 @@ export function renderEarthquakes(viewer: any, earthquakes: Earthquake[]) {
 
   earthquakes.forEach((eq) => {
     try {
+      if (!isFinite(eq.lat) || !isFinite(eq.lon)) return;
+      if (eq.lat < -90 || eq.lat > 90 || eq.lon < -180 || eq.lon > 180) return;
       const color = eq.magnitude >= 5
         ? Cesium.Color.fromCssColorString("#ff3333").withAlpha(0.9)
         : eq.magnitude >= 4
