@@ -1,37 +1,39 @@
 import { Cesium } from "@/lib/cesium-config";
 import type { SatelliteData } from "@/hooks/useSatellites";
 
+let currentCollection: any = null;
+
 export function renderSatellites(viewer: any, satellites: SatelliteData[]) {
-  if (!viewer || !viewer.entities) return;
+  if (!viewer || !viewer.scene) return;
+
+  if (currentCollection) {
+    try { viewer.scene.primitives.remove(currentCollection); } catch {}
+    currentCollection = null;
+  }
 
   try {
     const toRemove = viewer.entities.values.filter((e: any) => e.id?.startsWith("sat-"));
     toRemove.forEach((e: any) => viewer.entities.remove(e));
-  } catch { /* ignore */ }
+  } catch {}
+
+  if (satellites.length === 0) return;
+
+  const points = new Cesium.PointPrimitiveCollection();
+  const color = Cesium.Color.fromCssColorString("#00ccff").withAlpha(0.8);
 
   satellites.forEach((sat) => {
     try {
-      viewer.entities.add({
-        id: `sat-${sat.id}`,
+      points.add({
         position: Cesium.Cartesian3.fromDegrees(sat.lon, sat.lat, sat.alt * 1000),
-        point: {
-          pixelSize: 3,
-          color: Cesium.Color.fromCssColorString("#00ccff").withAlpha(0.8),
-          outlineColor: Cesium.Color.fromCssColorString("#00ccff").withAlpha(0.3),
-          outlineWidth: 1,
-          distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 30000000),
-        },
-        label: {
-          text: sat.name.slice(0, 20),
-          font: "9px JetBrains Mono",
-          fillColor: Cesium.Color.fromCssColorString("#00ccff").withAlpha(0.7),
-          style: Cesium.LabelStyle.FILL,
-          verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
-          pixelOffset: new Cesium.Cartesian2(0, -6),
-          scale: 0.7,
-          distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 5000000),
-        },
+        pixelSize: 2.5,
+        color,
+        outlineColor: Cesium.Color.fromCssColorString("#00ccff").withAlpha(0.3),
+        outlineWidth: 1,
+        distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 30000000),
       });
-    } catch { /* ignore individual satellite errors */ }
+    } catch {}
   });
+
+  currentCollection = points;
+  viewer.scene.primitives.add(points);
 }
