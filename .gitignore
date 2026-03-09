@@ -12,18 +12,6 @@ dist
 dist-ssr
 *.local
 
-# Env files (contain API keys — NEVER commit these)
-.env
-.env.local
-.env.*.local
-server/.env
-server/.env.local
-
-# Credential files
-credentials.json
-*.pem
-*.key
-
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
