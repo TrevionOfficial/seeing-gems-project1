@@ -23,6 +23,8 @@ export function renderCCTV(viewer: any, cameras: CCTVCamera[]) {
 
   cameras.forEach((cam) => {
     try {
+      if (!isFinite(cam.lat) || !isFinite(cam.lon)) return;
+      if (cam.lat < -90 || cam.lat > 90 || cam.lon < -180 || cam.lon > 180) return;
       points.add({
         position: Cesium.Cartesian3.fromDegrees(cam.lon, cam.lat, 50),
         pixelSize: 5,

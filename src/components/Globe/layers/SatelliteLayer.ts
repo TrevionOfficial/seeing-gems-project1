@@ -23,6 +23,9 @@ export function renderSatellites(viewer: any, satellites: SatelliteData[]) {
 
   satellites.forEach((sat) => {
     try {
+      if (!isFinite(sat.lat) || !isFinite(sat.lon) || !isFinite(sat.alt)) return;
+      if (sat.lat < -90 || sat.lat > 90 || sat.lon < -180 || sat.lon > 180) return;
+      if (sat.alt < 0 || sat.alt > 100000) return;
       points.add({
         position: Cesium.Cartesian3.fromDegrees(sat.lon, sat.lat, sat.alt * 1000),
         pixelSize: 2.5,

@@ -22,6 +22,7 @@ export function useFlights(enabled: boolean) {
     try {
       // adsb.fi public API - no auth needed, returns aircraft in view
       const res = await fetch("https://opensky-network.org/api/states/all?lamin=25&lomin=-130&lamax=50&lomax=-60");
+      if (!res.ok) { setFlights([]); return; }
       const data = await res.json();
       
       if (data.states) {
